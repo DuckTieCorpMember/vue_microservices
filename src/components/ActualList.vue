@@ -1,6 +1,6 @@
 <template>
     <div class="layout">
-        <div class="layout__block shrink">
+        <div class="layout__block shrink header-mm">
             <div class="control-bar control-bar--sub">
                 <div class="control-bar__layout shrink">
                     <div class="search">
@@ -11,7 +11,15 @@
                                 </svg>
                             </span>
                         </button>
-                        <input class="search__input" placeholder="Enter service ..."/>
+                        <div class="search__div">
+                            <input class="search__input" placeholder="Enter service ..."
+                                v-model="search" @input="onChange"/>
+                            <ul class="autocomplete-results" v-show="isOpen">
+                                <li class="autocomplete-result" v-for="(result,i) in results" :key='i'
+                                    @click="setResult(result)">{{result.name}}                                    
+                                </li>
+                            </ul>
+                        </div>
                         <button type="button" class="search__clear-button button">
                             <span class="button__icon icon icon--baseline">
                                 <svg class="icon__svg" viewBox="0 0 31 31" version="1.1">
@@ -23,7 +31,7 @@
                     </div>
                 </div>
                 <div class="control-bar__layout">
-                    <button class="button">Add service</button>
+                    <button v-on:click="showModal = true" class="button">Add service</button>
                 </div>
             </div>
         </div>
@@ -36,7 +44,7 @@
                         </div>
                         <div class="service-list__body">
                             <ul class="list">
-                                <li class="list__layout">AAAAAAAAAAAA</li>
+                                <li class="list__layout" v-for="(item,index) in listData" :key="index" v-on:click="showDescription(item['_id'])">{{item.name}}</li>
                             </ul>
                         </div>
                     </div>
@@ -64,21 +72,24 @@
                             <tbody class="table__tbody">
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right table__td--nowrap">Name</td>
-                                    <td class="table__td">AAAAAAAAAA</td>
+                                    <td id="name-and-id" class="table__td">AAAAAAAAAA (_ID)</td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">Description</td>
-                                    <td class="table__td">nooooooooooooooooooo ononon ni ni ni noi gno nio fdoign dfng ifdnio gndfin giofdng iofdniog ndfion</td>
+                                    <td id="description-id" class="table__td">nooooooooooooooooooo ononon ni ni ni noi gno nio fdoign dfng ifdnio gndfin giofdng iofdniog ndfion</td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">Projects</td>
                                     <td class="table__td">
                                         <div class="panel">
                                             <ul>
-                                                <li style="float: left;" class="panel__layout shrink"><a class="link">Asd</a></li>
-                                                <li style="float: left;" class="panel__layout shrink"><a class="link">Asd</a></li>
-                                                <li style="float: left;" class="panel__layout shrink"><a class="link">Asd</a></li>
-                                            </ul>
+                                                <li style="float: left;" class="panel__layout shrink"
+                                                    v-for="(item,index) in projects" :key="index">
+                                                    <a class="link" :href="item.link">
+                                                        {{item.name}}
+                                                    </a>
+                                                </li>
+                                            </ul>                                            
                                         </div>
                                     </td>
                                 </tr>
@@ -88,17 +99,20 @@
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">Git</td>
-                                    <td class="table__td"><a class="link">GIT</a></td>
+                                    <td class="table__td"><a id="git-text" class="link">GIT</a></td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">.JARs</td>
                                     <td class="table__td">
                                         <div class="panel">
                                             <ul>
-                                                <li style="float: left;" class="panel__layout shrink"><a class="link">Asd.jar</a></li>
-                                                <li style="float: left;" class="panel__layout shrink"><a class="link">Asd.jar</a></li>
-                                                <li style="float: left;" class="panel__layout shrink"><a class="link">Asd.jar</a></li>
-                                            </ul>
+                                                <li style="float: left;" class="panel__layout shrink"
+                                                    v-for="(item,index) in jars" :key="index">
+                                                    <a class="link" :href="item.link">
+                                                        {{item.name}}
+                                                    </a>
+                                                </li>
+                                            </ul>     
                                         </div>
                                     </td>
                                 </tr>
@@ -108,15 +122,184 @@
                 </div>
             </div>
         </div>
+        <div class="modal" v-show="showModal">
+            <div class="modal-wrapper">
+                <div class="modal-container">
+                    <content select=".modal-header">
+                        <div class="modal-header">
+                            <h3>
+                                Fill out this forms:
+                            </h3>
+                            <hr>
+                            <br/>                            
+                        </div>
+                    </content>
+                    <div class="modal-body">
+                        <table class="table table--details">
+                            <tbody class="table__tbody">
+                                <tr class="table__row">
+                                    <td class="table__td table__td--txt-right table__td--nowrap">Name</td>
+                                    <td>
+                                        <input class="search__input" placeholder="Enter name of service ..."/>
+                                    </td>
+                                </tr>
+                                <tr class="table__row">
+                                    <td class="table__td table__td--txt-right table__td--nowrap">Description</td>
+                                    <td>
+                                        <input class="search__input" placeholder="What does a service perform?"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer uk-clearfix">
+                        <button v-on:click="addService" v-if='adding === "no"' class="button button--add">Add</button>
+                        <button v-else-if='adding === "inProgress"' class="button button--progress">In progress</button>
+                        <button v-else class="button button--ready">Ready</button>
+                        <button style="float: right;" v-on:click="showModal = false" class="button button--close">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script>
+import data from './../assets/json/generated.json'
+import $ from 'jquery'
 export default {
-    
+    name: 'modal',
+    data(){
+        return{
+            listData: data,
+            search: '',
+            results: [],
+            isOpen: false,
+            projects: [],
+            jars: [],
+            showModal: false,
+            adding: 'no'
+        }
+    },
+    methods:{
+        showDescription(_id){
+            let obj = null;
+            this.listData.forEach(el => {
+                if(el._id === _id)
+                    obj = el;
+            });
+            $('#name-and-id').html(obj.name+" ("+obj._id+")");
+            $('#description-id').html(obj.description);
+            $('#git-text').html(obj.git);
+            this.projects = obj['projects'];
+            this.jars = obj['jars'];
+        },
+        onChange(){
+            this.isOpen = true;
+            this.filterResults();
+        },
+        filterResults(){
+            this.results = this.listData.filter(item => item.name.toLowerCase().indexOf(this.search.toLowerCase())>-1)
+        },
+        setResult(result){
+            this.search = result.name;
+            this.isOpen = false;
+            this.listData.forEach(element => {
+                if(element.name == result.name)
+                {
+                    this.showDescription(element['_id']);
+                    return;
+                }
+            });
+        },
+        addService(){
+            this.adding = 'inProgress';
+            setTimeout(function(){
+                this.adding = 'ready';
+                setTimeout(function(){
+                    this.adding = 'no';
+                }.bind(this), 2000);
+            }.bind(this), 2000);
+        }
+    }
 }
 </script>
 
 <style scoped>
     @import './css/service_list.css';
+
+    .header-mm{
+        margin-bottom: 1rem;
+    }
+    .search__div{
+        width: 100%;
+    }
+    .autocomplete-result{
+        z-index: 999;
+        padding: 0;
+        margin: 0;
+        border: 1px solid #a0a0a0;
+        height: 10rem;
+        width: 93%;
+        overflow:auto;
+        position: absolute;
+        background-color: rgba(255, 255, 255, 0.804);
+        font-size: 0.76562rem;
+    }
+    .autocomplete-results{
+        list-style: none;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: table;
+        transition: opacity .3s ease;
+        z-index: 5;
+    }
+    .modal-wrapper {
+        display: table-cell;
+        vertical-align: middle;
+    }
+    .modal-container {
+        background: #fff;
+        width: 450px;
+        border-radius: 5px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
+        transition: all .3s ease;
+        margin: 0 auto;
+        padding: 20px 30px;
+    }
+    .modal-footer {
+        margin-top: 15px;
+    }
+    .button--add{
+        color:white;
+        background-color: #6bae6e;
+    }
+    .button--close{
+        color:white;
+        background-color: #b83737;
+    }
+    .button--progress{
+        color:white;
+        background-color: #0f5fa5;
+    }
+    .button--ready{
+        background-color: #ffffff;
+        color: black;
+    }
+    .modal-enter, .modal-leave {
+        opacity: 0;
+    }
+    .modal-enter .modal-container, .modal-leave .modal-container {
+        -webkit-transform: scale(1.1);
+        transform: scale(1.1);
+    }
 </style>
