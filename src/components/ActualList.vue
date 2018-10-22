@@ -1,5 +1,5 @@
 <template>
-    <div class="layout">
+    <div class="layout block-body">
         <div class="layout__block shrink header-mm">
             <div class="control-bar control-bar--sub">
                 <div class="control-bar__layout shrink">
@@ -44,7 +44,7 @@
                         </div>
                         <div class="service-list__body">
                             <ul class="list">
-                                <li class="list__layout" v-for="(item,index) in listData" :key="index" v-on:click="showDescription(item['_id'])">{{item.name}}</li>
+                                <li class="list__layout" v-for="(item,index) in orderedList" :key="index" v-on:click="showDescription(item['_id'])">{{item.name}}</li>
                             </ul>
                         </div>
                     </div>
@@ -60,7 +60,7 @@
                                     <th class="table__th">
                                         <div class="panel">
                                             <div class="panel__layout shrink">
-                                                <button class="button">Edit</button>
+                                                <button v-on:click="edit_modal" class="button">Edit</button>
                                             </div>
                                             <div class="panel_layout">
                                                 <button class="button">Delete</button>
@@ -72,11 +72,11 @@
                             <tbody class="table__tbody">
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right table__td--nowrap">Name</td>
-                                    <td id="name-and-id" class="table__td">AAAAAAAAAA (_ID)</td>
+                                    <td id="name-and-id" class="table__td">{{desc_name}} ({{desc_id}})</td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">Description</td>
-                                    <td id="description-id" class="table__td">nooooooooooooooooooo ononon ni ni ni noi gno nio fdoign dfng ifdnio gndfin giofdng iofdniog ndfion</td>
+                                    <td id="description-id" class="table__td">{{desc_desc}}</td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">Projects</td>
@@ -95,11 +95,11 @@
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">End Points</td>
-                                    <td class="table__td">AAAAAAAAAA</td>
+                                    <td class="table__td">{{desc_end}}</td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">Git</td>
-                                    <td class="table__td"><a id="git-text" class="link">GIT</a></td>
+                                    <td class="table__td"><a id="git-text" class="link">{{desc_git}}</a></td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right">.JARs</td>
@@ -127,8 +127,11 @@
                 <div class="modal-container">
                     <content select=".modal-header">
                         <div class="modal-header">
-                            <h3>
+                            <h3 v-if="adding">
                                 Fill out this forms:
+                            </h3>
+                            <h3 v-if="!adding">
+                                Edit what you need:
                             </h3>
                             <hr>
                             <br/>                            
@@ -140,22 +143,62 @@
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right table__td--nowrap">Name</td>
                                     <td>
-                                        <input class="search__input" placeholder="Enter name of service ..."/>
+                                        <input v-model="toAdd.name" class="search__input" placeholder="Enter name of service ..."/>
+                                        <p class="warning-p" v-show="addformtemps.show_name_warning">Enter a name</p>
                                     </td>
                                 </tr>
                                 <tr class="table__row">
                                     <td class="table__td table__td--txt-right table__td--nowrap">Description</td>
                                     <td>
-                                        <input class="search__input" placeholder="What does a service perform?"/>
+                                        <input v-model="toAdd.description" class="search__input" placeholder="What does a service perform?"/>
+                                        <p class="warning-p" v-show="addformtemps.show_desc_warning">Enter a brief description</p>
+                                    </td>
+                                </tr>
+                                <tr class="table__row">
+                                    <td class="table__td table__td--txt-right table__td--nowrap">Projects</td>
+                                    <td>
+                                        <ul class="add-form-list">
+                                            <li class="autocomplete-results" v-for="(item,index) in toAdd.projects" :key="index">{{item.name}}</li>
+                                        </ul>
+                                        <div>
+                                            <div class="name-link-form">
+                                                <input v-model="addformtemps.pr_name" class="search__input" placeholder="Project Name"/>
+                                                <input v-model="addformtemps.pr_link" class="search__input" placeholder="Project Link"/>
+                                                <button v-on:click="addToAdd('projects', addformtemps.pr_name, addformtemps.pr_link)" class="button">+</button>
+                                            </div>
+                                            <p class="warning-p" v-show="addformtemps.show_pr_warning">Enter at least 1 project</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="table__row">
+                                    <td class="table__td table__td--txt-right table__td--nowrap">.JARs</td>
+                                    <td>
+                                        <ul class="add-form-list">
+                                            <li class="autocomplete-results" v-for="(item,index) in toAdd.jars" :key="index">{{item.name}}</li>
+                                        </ul>
+                                        <div>
+                                            <div class="name-link-form">
+                                                <input v-model="addformtemps.jr_name" class="search__input" placeholder="JAR Name"/>
+                                                <input v-model="addformtemps.jr_link" class="search__input" placeholder="JAR Link"/>
+                                                <button v-on:click="addToAdd('jars', addformtemps.jr_name, addformtemps.jr_link)" class="button">+</button>
+                                            </div>
+                                            <p class="warning-p" v-show="addformtemps.show_jr_warning">Enter at least 1 .jar file name</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="table__row">
+                                    <td class="table__td table__td--txt-right table__td--nowrap">End Points</td>
+                                    <td>
+                                        <input v-model="toAdd.endpoints" class="search__input" placeholder="Enter end points ..."/>
+                                        <p class="warning-p" v-show="addformtemps.show_endp_warning">Enter an end point</p>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="modal-footer uk-clearfix">
-                        <button v-on:click="addService" v-if='adding === "no"' class="button button--add">Add</button>
-                        <button v-else-if='adding === "inProgress"' class="button button--progress">In progress</button>
-                        <button v-else class="button button--ready">Ready</button>
+                        <button v-on:click="addService" v-if='adding' class="button button--add">Add</button>
+                        <button v-on:click="editService" v-if='!adding' class="button button--progress">Edit</button>
                         <button style="float: right;" v-on:click="showModal = false" class="button button--close">Close</button>
                     </div>
                 </div>
@@ -167,18 +210,43 @@
 <script>
 import data from './../assets/json/generated.json'
 import $ from 'jquery'
-export default {
-    name: 'modal',
+
+export default { 
     data(){
         return{
             listData: data,
             search: '',
+            desc_id: '',
+            desc_name: '',
+            desc_end:'',
+            desc_git:'',
+            desc_desc:'',
             results: [],
             isOpen: false,
             projects: [],
             jars: [],
             showModal: false,
-            adding: 'no'
+            adding: true,
+            toAdd: {
+                '_id': '',
+                'name': "",
+                'description': "",
+                'projects': [],
+                'endpoints': "",
+                'git': '',
+                'jars': []
+            },
+            addformtemps: {
+                'pr_name':'',
+                'pr_link':'',
+                'jr_name':'',
+                'jr_link':'',
+                'show_name_warning': false,
+                'show_desc_warning': false,
+                'show_endp_warning': false,
+                'show_pr_warning': false,
+                'show_jr_warning': false
+            }
         }
     },
     methods:{
@@ -188,6 +256,11 @@ export default {
                 if(el._id === _id)
                     obj = el;
             });
+            this.desc_name = obj.name;
+            this.desc_id = obj._id;
+            //this.desc_end = obj.endpoints;
+            this.desc_desc = obj.description;
+            this.desc_git = obj.git;
             $('#name-and-id').html(obj.name+" ("+obj._id+")");
             $('#description-id').html(obj.description);
             $('#git-text').html(obj.git);
@@ -213,14 +286,124 @@ export default {
             });
         },
         addService(){
-            this.adding = 'inProgress';
-            setTimeout(function(){
-                this.adding = 'ready';
-                setTimeout(function(){
-                    this.adding = 'no';
-                }.bind(this), 2000);
-            }.bind(this), 2000);
+            if(this.toAdd.name === ""){
+                this.addformtemps.show_name_warning = true;
+                return;
+            }
+            if(this.toAdd.description === ""){
+                this.addformtemps.show_desc_warning = true;
+                return;
+            }
+            if(this.toAdd.endpoints === ""){
+                this.addformtemps.show_endp_warning = true;
+                return;
+            }
+            if(this.toAdd.projects.length === 0){
+                this.addformtemps.show_pr_warning = true;
+                return;
+            }
+            if(this.toAdd.jars.length === 0){
+                this.addformtemps.show_jr_warning = true;
+                return;
+            }
+            this.toAdd._id = this.fakeID();
+            this.listData.push(this.toAdd);
+            this.reset_addform();
+        },
+        reset_addform(){
+            this.toAdd = {
+                '_id': '',
+                'name': "",
+                'description': "",
+                'projects': [],
+                'endpoints': "",
+                'git': '',
+                'jars': []
+            };
+            this.addformtemps = {
+                'pr_name':'',
+                'pr_link':'',
+                'jr_name':'',
+                'jr_link':'',
+                'show_name_warning': false,
+                'show_desc_warning': false,
+                'show_endp_warning': false,
+                'show_pr_warning': false,
+                'show_jr_warning': false
+            }
+        },
+        addToAdd(arrayname, name, link){
+            if(arrayname === 'projects'){
+                if(name !== ''){
+                        this.toAdd.projects.push({
+                        'name': name,
+                        'link': link
+                    });
+                }
+                this.addformtemps.pr_name = "";
+                this.addformtemps.pr_link = "";
+            }
+            else if(arrayname === 'jars'){
+                if(name !== ''){
+                        this.toAdd.jars.push({
+                        'name': name,
+                        'link': link
+                    });
+                }
+                this.addformtemps.jr_name = "";
+                this.addformtemps.jr_link = "";
+            }
+        },
+        predicateBy(prop){
+            return function(a,b){
+                if( a[prop] > b[prop]){
+                    return 1;
+                }else if( a[prop] < b[prop] ){
+                    return -1;
+                }
+                return 0;
+            }
+        },
+        fakeID() {
+            var text = "";
+            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            for (var i = 0; i < 10; i++)
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+            return text;
+        },
+        edit_modal(){
+            this.adding = false;
+            this.showModal = true;
+            this.toAdd = {
+                '_id': this.desc_id,
+                'name': this.desc_name,
+                'description': this.desc_desc,
+                'projects': this.projects,
+                'endpoints': this.desc_end,
+                'git': this.desc_git,
+                'jars': this.jars
+            };
+        },
+        editService(){
+            this.listData.forEach(element => {
+                if(element._id === this.toAdd._id){
+                    let k;
+                    for(key in element){
+                        element[key] = this.toAdd[key];
+                    }
+                }
+            });
+            this.reset_addform();
+            this.showModal=false;
         }
+    },
+    computed:{
+        orderedList(){
+            return this.listData.slice().sort(this.predicateBy('name'));
+        }
+    },
+    beforeMount(){
+        this.showDescription(this.orderedList[0]._id);
     }
 }
 </script>
@@ -301,5 +484,15 @@ export default {
     .modal-enter .modal-container, .modal-leave .modal-container {
         -webkit-transform: scale(1.1);
         transform: scale(1.1);
+    }
+    .name-link-form{
+        display: flex;
+        flex-direction: row;
+    }
+    .add-form-list{
+        padding: 1rem;
+    }
+    .warning-p{
+        color: #b83737;
     }
 </style>
