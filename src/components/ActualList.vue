@@ -11,7 +11,7 @@
                                 </svg>
                             </span>
                         </button>
-                        <div class="search__div">
+                        <div class="search__div autocomplete">
                             <input class="search__input" placeholder="Enter service ..."
                                 v-model="search" @input="onChange"/>
                             <ul class="autocomplete-results" v-show="isOpen">
@@ -20,7 +20,7 @@
                                 </li>
                             </ul>
                         </div>
-                        <button type="button" class="search__clear-button button">
+                        <button type="button" v-on:click="clear_click" class="search__clear-button button">
                             <span class="button__icon icon icon--baseline">
                                 <svg class="icon__svg" viewBox="0 0 31 31" version="1.1">
                                     <path d="m 22.47134,19.635231 q 0,-0.475735 -0.347652,-0.823387 L 18.811844,15.5 22.123688,12.188156 q 0.347652,-0.347652 0.347652,-0.823387 0,-0.494032 -0.347652,-0.841684 L 20.476915,8.8763118 q -0.347652,-0.3476521 -0.841684,-0.3476521 -0.475735,0 -0.823387,0.3476521 L 15.5,12.188156 12.188156,8.8763118 q -0.347652,-0.3476521 -0.823387,-0.3476521 -0.494032,0 -0.841684,0.3476521 L 8.8763117,10.523085 q -0.3476519,0.347652 -0.3476519,0.841684 0,0.475735 0.3476519,0.823387 L 12.188156,15.5 8.8763117,18.811844 q -0.3476519,0.347652 -0.3476519,0.823387 0,0.494032 0.3476519,0.841684 l 1.6467733,1.646773 q 0.347652,0.347652 0.841684,0.347652 0.475735,0 0.823387,-0.347652 L 15.5,18.811844 l 3.311844,3.311844 q 0.347652,0.347652 0.823387,0.347652 0.494032,0 0.841684,-0.347652 l 1.646773,-1.646773 Q 22.47134,20.129263 22.47134,19.635231 Z M 29.552465,15.5 q 0,3.824174 -1.88464,7.053679 -1.88464,3.229506 -5.114146,5.114146 -3.229505,1.88464 -7.053679,1.88464 -3.824174,0 -7.0536791,-1.88464 Q 5.2168155,25.783185 3.332175,22.553679 1.4475342,19.324174 1.4475342,15.5 q 0,-3.824174 1.8846408,-7.053679 Q 5.2168155,5.2168155 8.4463209,3.332175 11.675826,1.4475342 15.5,1.4475342 q 3.824174,0 7.053679,1.8846408 3.229506,1.8846405 5.114146,5.114146 1.88464,3.229505 1.88464,7.053679 z">
@@ -31,7 +31,7 @@
                     </div>
                 </div>
                 <div class="control-bar__layout">
-                    <button v-on:click="showModal = true" class="button">Add service</button>
+                    <button v-on:click="addingStart" class="button">Add service</button>
                 </div>
             </div>
         </div>
@@ -63,7 +63,7 @@
                                                 <button v-on:click="edit_modal" class="button">Edit</button>
                                             </div>
                                             <div class="panel_layout">
-                                                <button class="button">Delete</button>
+                                                <button v-on:click="deleteObject" class="button">Delete</button>
                                             </div>
                                         </div>
                                     </th>
@@ -158,13 +158,16 @@
                                     <td class="table__td table__td--txt-right table__td--nowrap">Projects</td>
                                     <td>
                                         <ul class="add-form-list">
-                                            <li class="autocomplete-results" v-for="(item,index) in toAdd.projects" :key="index">{{item.name}}</li>
+                                            <li class="flexing-list" v-for="(item,index) in toAdd.projects" :key="index">
+                                                <p class="flexing-list-content">{{item.name}}</p>
+                                                <button v-on:click="removeEdit('projects',index)" class="button button--close flexing-list-close">-</button>
+                                            </li>
                                         </ul>
                                         <div>
                                             <div class="name-link-form">
                                                 <input v-model="addformtemps.pr_name" class="search__input" placeholder="Project Name"/>
                                                 <input v-model="addformtemps.pr_link" class="search__input" placeholder="Project Link"/>
-                                                <button v-on:click="addToAdd('projects', addformtemps.pr_name, addformtemps.pr_link)" class="button">+</button>
+                                                <button v-on:click="addToAdd('projects', addformtemps.pr_name, addformtemps.pr_link)" class="button button--add">+</button>
                                             </div>
                                             <p class="warning-p" v-show="addformtemps.show_pr_warning">Enter at least 1 project</p>
                                         </div>
@@ -174,13 +177,16 @@
                                     <td class="table__td table__td--txt-right table__td--nowrap">.JARs</td>
                                     <td>
                                         <ul class="add-form-list">
-                                            <li class="autocomplete-results" v-for="(item,index) in toAdd.jars" :key="index">{{item.name}}</li>
+                                            <li class="flexing-list" v-for="(item,index) in toAdd.jars" :key="index">
+                                                <p class="flexing-list-content">{{item.name}}</p>
+                                                <button v-on:click="removeEdit('jars',index)" class="button button--close flexing-list-close">-</button>
+                                            </li>
                                         </ul>
                                         <div>
                                             <div class="name-link-form">
                                                 <input v-model="addformtemps.jr_name" class="search__input" placeholder="JAR Name"/>
                                                 <input v-model="addformtemps.jr_link" class="search__input" placeholder="JAR Link"/>
-                                                <button v-on:click="addToAdd('jars', addformtemps.jr_name, addformtemps.jr_link)" class="button">+</button>
+                                                <button v-on:click="addToAdd('jars', addformtemps.jr_name, addformtemps.jr_link)" class="button button--add">+</button>
                                             </div>
                                             <p class="warning-p" v-show="addformtemps.show_jr_warning">Enter at least 1 .jar file name</p>
                                         </div>
@@ -258,18 +264,22 @@ export default {
             });
             this.desc_name = obj.name;
             this.desc_id = obj._id;
-            //this.desc_end = obj.endpoints;
+            this.desc_end = obj.endpoints;
             this.desc_desc = obj.description;
             this.desc_git = obj.git;
-            $('#name-and-id').html(obj.name+" ("+obj._id+")");
-            $('#description-id').html(obj.description);
-            $('#git-text').html(obj.git);
-            this.projects = obj['projects'];
-            this.jars = obj['jars'];
+            this.projects = obj['projects'].slice(0);
+            this.jars = obj['jars'].slice(0);
         },
         onChange(){
-            this.isOpen = true;
-            this.filterResults();
+            if(this.search === "")
+            {
+                this.isOpen = false;
+            }
+            else
+            {
+                this.isOpen = true;
+                this.filterResults();
+            }
         },
         filterResults(){
             this.results = this.listData.filter(item => item.name.toLowerCase().indexOf(this.search.toLowerCase())>-1)
@@ -285,30 +295,46 @@ export default {
                 }
             });
         },
+        clear_click(){
+            this.isOpen=false;
+            this.search='';
+        },
+        addingStart(){
+            this.showModal = true;
+            this.adding = true;
+            this.reset_addform();
+        },
         addService(){
+            if(this.checkValidity() === 1)
+            {
+                this.toAdd._id = this.fakeID();
+                this.listData.push(this.toAdd);
+                this.showDescription(this.toAdd._id);
+                this.reset_addform();
+            }
+        },
+        checkValidity(){
             if(this.toAdd.name === ""){
                 this.addformtemps.show_name_warning = true;
-                return;
+                return -1;
             }
             if(this.toAdd.description === ""){
                 this.addformtemps.show_desc_warning = true;
-                return;
+                return -1;
             }
             if(this.toAdd.endpoints === ""){
                 this.addformtemps.show_endp_warning = true;
-                return;
+                return -1;
             }
             if(this.toAdd.projects.length === 0){
                 this.addformtemps.show_pr_warning = true;
-                return;
+                return -1;
             }
             if(this.toAdd.jars.length === 0){
                 this.addformtemps.show_jr_warning = true;
-                return;
+                return -1;
             }
-            this.toAdd._id = this.fakeID();
-            this.listData.push(this.toAdd);
-            this.reset_addform();
+            return 1;
         },
         reset_addform(){
             this.toAdd = {
@@ -378,23 +404,49 @@ export default {
                 '_id': this.desc_id,
                 'name': this.desc_name,
                 'description': this.desc_desc,
-                'projects': this.projects,
+                'projects': this.projects.slice(0),
                 'endpoints': this.desc_end,
                 'git': this.desc_git,
-                'jars': this.jars
+                'jars': this.jars.slice(0)
             };
         },
         editService(){
+            if(this.checkValidity()===1)
+            {
+                this.listData.forEach(element => {
+                    if(element._id === this.toAdd._id){
+                        console.log("Asd");
+                        element.name = this.toAdd.name;
+                        element.description = this.toAdd.description;
+                        element.endpoints = this.toAdd.endpoints;
+                        element.git = this.toAdd.git;
+                        element.projects = this.toAdd.projects.slice(0);
+                        element.jars = this.toAdd.jars.slice(0);
+                        this.reset_addform();
+                        this.showModal=false;
+                        this.showDescription(element._id);
+                    }
+                });
+            }
+        },
+        deleteObject(){
+            let i=-1;
             this.listData.forEach(element => {
-                if(element._id === this.toAdd._id){
-                    let k;
-                    for(key in element){
-                        element[key] = this.toAdd[key];
+                if(element._id === this.desc_id){
+                    i=this.listData.indexOf(element);
+                    if(i != -1)
+                    {
+                        this.listData.splice(i,1);
+                        this.showDescription(this.orderedList[0]._id);
                     }
                 }
             });
-            this.reset_addform();
-            this.showModal=false;
+        },
+        removeEdit(name,i){
+            if(name === "projects")
+                this.toAdd.projects.splice(i,1);
+            else if(name === "jars")
+                this.toAdd.jars.splice(i,1);
         }
     },
     computed:{
@@ -410,6 +462,7 @@ export default {
 
 <style scoped>
     @import './css/service_list.css';
+    @import './css/autocomplete.css';
 
     .header-mm{
         margin-bottom: 1rem;
@@ -417,24 +470,6 @@ export default {
     .search__div{
         width: 100%;
     }
-    .autocomplete-result{
-        z-index: 999;
-        padding: 0;
-        margin: 0;
-        border: 1px solid #a0a0a0;
-        height: 10rem;
-        width: 93%;
-        overflow:auto;
-        position: absolute;
-        background-color: rgba(255, 255, 255, 0.804);
-        font-size: 0.76562rem;
-    }
-    .autocomplete-results{
-        list-style: none;
-        text-align: left;
-        cursor: pointer;
-    }
-
     .modal {
         position: fixed;
         top: 0;
@@ -495,4 +530,19 @@ export default {
     .warning-p{
         color: #b83737;
     }
+    .flexing-list{
+        display: flex;
+        justify-content: row;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+    .flexing-list-content{
+        width: 90%;
+        margin-bottom: 0px;
+    }
+    .flexing-list-close{
+        height: 90%;
+    }
+
+    @import './css/autocomplete.css';
 </style>
