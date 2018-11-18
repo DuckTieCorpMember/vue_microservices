@@ -44,7 +44,7 @@
                         </div>
                         <div class="service-list__body">
                             <ul class="list">
-                                <li class="list__layout" v-for="(item,index) in orderedList" :key="index" v-on:click="showDescription(item['_id'])">{{item.name}}</li>
+                                <li class="list__layout" v-for="(item,index) in orderedList" :key="index" v-on:click="showDescription(item['id'])">{{item.name}}</li>
                             </ul>
                         </div>
                     </div>
@@ -199,6 +199,13 @@
                                         <p class="warning-p" v-show="addformtemps.show_endp_warning">Enter an end point</p>
                                     </td>
                                 </tr>
+                                <tr class="table__row">
+                                    <td class="table__td table__td--txt-right table__td--nowrap">GIT</td>
+                                    <td>
+                                        <input v-model="toAdd.git" class="search__input" placeholder="Enter a git link ..."/>
+                                        <p class="warning-p" v-show="addformtemps.show_endp_warning">Enter a git link</p>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -214,13 +221,13 @@
 </template>
 
 <script>
-import data from './../assets/json/generated.json'
-import $ from 'jquery'
+import axios from 'axios';
 
 export default { 
     data(){
         return{
-            listData: data,
+            url: "http://localhost:8080",
+            listData: [],
             search: '',
             desc_id: '',
             desc_name: '',
@@ -234,12 +241,11 @@ export default {
             showModal: false,
             adding: true,
             toAdd: {
-                '_id': '',
                 'name': "",
+                'git': '',
+                'endpoints': "",
                 'description': "",
                 'projects': [],
-                'endpoints': "",
-                'git': '',
                 'jars': []
             },
             addformtemps: {
@@ -251,19 +257,23 @@ export default {
                 'show_desc_warning': false,
                 'show_endp_warning': false,
                 'show_pr_warning': false,
-                'show_jr_warning': false
+                'show_jr_warning': false,
+                'show_git_warning': false
             }
         }
     },
+    mounted: function(){
+        this.loadServices();
+    },
     methods:{
-        showDescription(_id){
+        showDescription(id){
             let obj = null;
             this.listData.forEach(el => {
-                if(el._id === _id)
+                if(el.id === id)
                     obj = el;
             });
             this.desc_name = obj.name;
-            this.desc_id = obj._id;
+            this.desc_id = obj.id;
             this.desc_end = obj.endpoints;
             this.desc_desc = obj.description;
             this.desc_git = obj.git;
@@ -290,7 +300,7 @@ export default {
             this.listData.forEach(element => {
                 if(element.name == result.name)
                 {
-                    this.showDescription(element['_id']);
+                    this.showDescription(element['id']);
                     return;
                 }
             });
@@ -307,9 +317,11 @@ export default {
         addService(){
             if(this.checkValidity() === 1)
             {
-                this.toAdd._id = this.fakeID();
-                this.listData.push(this.toAdd);
-                this.showDescription(this.toAdd._id);
+                axios.post(this.url+"/microservices", this.toAdd)
+                .then(responce => {
+                    this.loadServices();
+                    this.showDescription(this.listData[this.listData.length-1].id);
+                });
                 this.reset_addform();
             }
         },
@@ -334,11 +346,15 @@ export default {
                 this.addformtemps.show_jr_warning = true;
                 return -1;
             }
+            if(this.toAdd.git === ""){
+                this.addformtemps.show_git_warning = true;
+                return -1;
+            }
             return 1;
         },
         reset_addform(){
             this.toAdd = {
-                '_id': '',
+                'id': '',
                 'name': "",
                 'description': "",
                 'projects': [],
@@ -401,7 +417,7 @@ export default {
             this.adding = false;
             this.showModal = true;
             this.toAdd = {
-                '_id': this.desc_id,
+                'id': this.desc_id,
                 'name': this.desc_name,
                 'description': this.desc_desc,
                 'projects': this.projects.slice(0),
@@ -414,17 +430,12 @@ export default {
             if(this.checkValidity()===1)
             {
                 this.listData.forEach(element => {
-                    if(element._id === this.toAdd._id){
-                        console.log("Asd");
-                        element.name = this.toAdd.name;
-                        element.description = this.toAdd.description;
-                        element.endpoints = this.toAdd.endpoints;
-                        element.git = this.toAdd.git;
-                        element.projects = this.toAdd.projects.slice(0);
-                        element.jars = this.toAdd.jars.slice(0);
-                        this.reset_addform();
-                        this.showModal=false;
-                        this.showDescription(element._id);
+                    if(element.id === this.toAdd.id){
+                        axios.put(this.url+"/microservices/"+element.id, this.toAdd)
+                        .then(responce => {
+                            console.log(responce);
+                            this.loadServices();
+                        });
                     }
                 });
             }
@@ -432,13 +443,12 @@ export default {
         deleteObject(){
             let i=-1;
             this.listData.forEach(element => {
-                if(element._id === this.desc_id){
-                    i=this.listData.indexOf(element);
-                    if(i != -1)
-                    {
-                        this.listData.splice(i,1);
-                        this.showDescription(this.orderedList[0]._id);
-                    }
+                if(element.id === this.desc_id){
+                    axios.delete(this.url+"/microservices/"+element.id)
+                    .then(responce => {
+                        console.log(responce);
+                        this.loadServices();
+                    });
                 }
             });
         },
@@ -447,15 +457,24 @@ export default {
                 this.toAdd.projects.splice(i,1);
             else if(name === "jars")
                 this.toAdd.jars.splice(i,1);
+        },
+        loadServices(){
+            axios.get(this.url+"/microservices")
+            .then(responce => {
+                this.listData = responce.data; 
+                this.showDescription(this.orderedList[0].id);
+            })
         }
     },
     computed:{
         orderedList(){
-            return this.listData.slice().sort(this.predicateBy('name'));
+            if(this.listData.length > 1){
+                return this.listData.slice().sort(this.predicateBy('name'));
+            }
+            else{
+                return this.listData;
+            }
         }
-    },
-    beforeMount(){
-        this.showDescription(this.orderedList[0]._id);
     }
 }
 </script>
